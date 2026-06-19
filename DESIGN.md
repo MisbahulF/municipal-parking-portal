@@ -51,7 +51,43 @@ The system is designed using a decoupled, microservices-based architecture to en
 
 The system utilizes both **synchronous** HTTP/JSON API boundaries and **asynchronous** processing paradigms to balance user experience and backend transaction integrity.
 
-![Data Flow Diagram](./docs/data_flow.png)
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Officer as Officer (UI)
+    actor Member as Member (UI)
+    participant GW as API Gateway
+    participant VS as Violation Service
+    participant BS as Billing Service
+    participant PS as Payment Service
+    participant DB as PostgreSQL DB
+    
+    Note over Officer, VS: Synchronous Boundary (REST)
+    Officer->>GW: POST /api/v1/violations
+    GW->>VS: Proxy request
+    VS->>DB: Save violation data
+    VS-->>GW: 201 Created (Violation Data)
+    GW-->>Officer: Show confirmation on UI
+
+    Note over VS, BS: Asynchronous Boundary (Trigger / Message)
+    VS-)BS: Emit violation_recorded event
+    BS->>DB: Query active FineRule version
+    BS->>DB: Query unpaid prior violations (last 90 days)
+    BS->>BS: Calculate final amount (Night & Repeat multipliers)
+    BS->>DB: Save new Invoice (Status: UNPAID)
+
+    Note over Member, BS: Synchronous Boundary (REST)
+    Member->>GW: GET /api/v1/vehicles/:plate/invoices
+    GW->>BS: Proxy request
+    BS->>DB: Query invoices & violations
+    BS-->>Member: Return invoice details (UNPAID)
+    
+    Note over Member, PS: Synchronous Settlement (REST)
+    Member->>GW: POST /api/v1/invoices/:id/pay
+    GW->>PS: Proxy request
+    PS->>DB: Settle invoice (Update status = PAID where status = UNPAID)
+    PS-->>Member: Payment Confirmation (Transaction ID)
+```
 
 ### Synchronous Boundaries (HTTP/REST)
 - **Violation Submission**: The Officer submits a violation through the UI. The request is proxied through the API Gateway to the Violation Service, which records the offense and responds immediately with a HTTP `201 Created` status containing the violation details.
@@ -69,7 +105,43 @@ The system utilizes both **synchronous** HTTP/JSON API boundaries and **asynchro
 
 The database design ensures that historic financial records remain audit-safe and immutable, even if administrators modify the base fine rates in the future.
 
-![ERD Diagram](./docs/erd.png)
+```mermaid
+erDiagram
+    violations {
+        uint id PK
+        string license_plate
+        string violation_type
+        string location
+        datetime timestamp
+        string photo_url
+    }
+    fine_rules {
+        uint id PK
+        int version
+        datetime created_at
+    }
+    fine_rule_details {
+        uint id PK
+        uint fine_rule_id FK
+        string violation_type
+        numeric base_amount
+        float multiplier
+    }
+    invoices {
+        uint id PK
+        uint violation_id FK "Unique"
+        string invoice_no "Unique"
+        uint fine_rule_id FK
+        numeric calculated_amount
+        string status
+        string transaction_id
+        datetime paid_at
+    }
+
+    violations ||--|| invoices : "generates"
+    fine_rules ||--|{ fine_rule_details : "contains"
+    fine_rules ||--|{ invoices : "applied_to"
+```
 
 ### Key Database Entities
 
