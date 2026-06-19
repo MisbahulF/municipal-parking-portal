@@ -1,0 +1,28 @@
+# Node.js
+**/node_modules/
+**/npm-debug.log*
+**/.next/
+**/out/
+**/build/
+
+# Go
+/api-gateway/api-gateway
+/backend/violation/violation
+/backend/billing/billing
+/backend/payment/payment
+*.exe
+*.test
+*.prof
+
+# IDEs & System
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment local settings
+.env*.local

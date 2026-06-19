@@ -1,0 +1,167 @@
+version: "3.9"
+
+services:
+  # ─── Infrastructure ───────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: pvp_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pvp_user
+      POSTGRES_PASSWORD: pvp_password
+      POSTGRES_DB: pvp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pvp_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pvp_user -d pvp_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: pvp_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: pvp_user
+      RABBITMQ_DEFAULT_PASS: pvp_password
+    ports:
+      - "5672:5672"    # AMQP protocol
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - pvp_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: pvp_redis
+    restart: unless-stopped
+    command: redis-server --requirepass pvp_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - pvp_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "pvp_password", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend Microservices ────────────────────────────────────────────────────
+
+  violation-service:
+    build:
+      context: .
+      dockerfile: backend/violation/Dockerfile
+    container_name: pvp_violation
+    restart: unless-stopped
+    environment:
+      PORT: "8081"
+      GIN_MODE: release
+      DB_HOST: postgres
+      DB_USER: pvp_user
+      DB_PASSWORD: pvp_password
+      DB_NAME: pvp_db
+      DB_PORT: "5432"
+      BILLING_SERVICE_URL: http://billing-service:8082
+    expose:
+      - "8081"          # internal only — not published to host
+    networks:
+      - pvp_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  billing-service:
+    build:
+      context: .
+      dockerfile: backend/billing/Dockerfile
+    container_name: pvp_billing
+    restart: unless-stopped
+    environment:
+      PORT: "8082"
+      GIN_MODE: release
+      DB_HOST: postgres
+      DB_USER: pvp_user
+      DB_PASSWORD: pvp_password
+      DB_NAME: pvp_db
+      DB_PORT: "5432"
+    expose:
+      - "8082"
+    networks:
+      - pvp_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: backend/payment/Dockerfile
+    container_name: pvp_payment
+    restart: unless-stopped
+    environment:
+      PORT: "8083"
+      GIN_MODE: release
+      DB_HOST: postgres
+      DB_USER: pvp_user
+      DB_PASSWORD: pvp_password
+      DB_NAME: pvp_db
+      DB_PORT: "5432"
+    expose:
+      - "8083"
+    networks:
+      - pvp_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── API Gateway ─────────────────────────────────────────────────────────────
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: pvp_gateway
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      GIN_MODE: release
+      # Service discovery — uses Docker service names as hostnames.
+      VIOLATION_SERVICE_URL: http://violation-service:8081
+      BILLING_SERVICE_URL:   http://billing-service:8082
+      PAYMENT_SERVICE_URL:   http://payment-service:8083
+      # CORS: allow Next.js dev server and production domain.
+      CORS_ORIGIN: "http://localhost:3000"
+    ports:
+      - "8080:8080"     # only the gateway is exposed to the host network
+    networks:
+      - pvp_network
+    depends_on:
+      - violation-service
+      - billing-service
+      - payment-service
+
+# ─── Volumes ──────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  redis_data:
+
+# ─── Networks ─────────────────────────────────────────────────────────────────
+networks:
+  pvp_network:
+    driver: bridge
