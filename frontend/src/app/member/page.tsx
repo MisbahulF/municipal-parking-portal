@@ -182,23 +182,38 @@ export default function MemberPage() {
                     <div className="card-body flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       
                       {/* Left: Info */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-sm text-gray-900">{inv.invoice_no}</span>
-                          <span
-                            className={
-                              inv.status === 'PAID'
-                                ? 'badge-paid'
-                                : inv.status === 'VOIDED'
-                                ? 'badge-voided'
-                                : 'badge-unpaid'
-                            }
-                          >
-                            {inv.status}
-                          </span>
-                        </div>
+                      <div className="flex gap-4 items-start">
+                        {inv.violation?.photo_url && (
+                          <a href={inv.violation.photo_url} target="_blank" rel="noopener noreferrer" title="View Full Evidence Image">
+                            <div className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg border bg-gray-50 hover:opacity-90 transition-opacity">
+                              <img
+                                src={inv.violation.photo_url}
+                                alt="Evidence"
+                                className="h-full w-full object-cover hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = 'none'
+                                }}
+                              />
+                            </div>
+                          </a>
+                        )}
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-sm text-gray-900">{inv.invoice_no}</span>
+                            <span
+                              className={
+                                inv.status === 'PAID'
+                                  ? 'badge-paid'
+                                  : inv.status === 'VOIDED'
+                                  ? 'badge-voided'
+                                  : 'badge-unpaid'
+                              }
+                            >
+                              {inv.status}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600">
 
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600">
                           <div>
                             <span className="font-semibold block text-gray-400">Type</span>
                             <span>{inv.violation?.violation_type?.replace(/_/g, ' ') || 'Parking Offense'}</span>
@@ -223,6 +238,7 @@ export default function MemberPage() {
                           )}
                         </div>
                       </div>
+                    </div>
 
                       {/* Right: Actions */}
                       <div className="flex items-center gap-4 border-t sm:border-t-0 pt-3 sm:pt-0 justify-between sm:justify-end">

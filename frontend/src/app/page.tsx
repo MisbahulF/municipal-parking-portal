@@ -153,7 +153,23 @@ export default function HomePage() {
                   <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 font-mono font-bold text-gray-900">{inv.invoice_no}</td>
                     <td className="px-6 py-4 font-semibold uppercase text-gray-950">{inv.violation?.license_plate}</td>
-                    <td className="px-6 py-4">{inv.violation?.violation_type?.replace(/_/g, ' ')}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {inv.violation?.photo_url && (
+                          <a href={inv.violation.photo_url} target="_blank" rel="noopener noreferrer" title="View Evidence Image">
+                            <img
+                              src={inv.violation.photo_url}
+                              alt="Evidence"
+                              className="h-8 w-12 object-cover rounded border hover:scale-105 transition-transform"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none'
+                              }}
+                            />
+                          </a>
+                        )}
+                        <span>{inv.violation?.violation_type?.replace(/_/g, ' ')}</span>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 max-w-[150px] truncate" title={inv.violation?.location}>
                       {inv.violation?.location}
                     </td>
