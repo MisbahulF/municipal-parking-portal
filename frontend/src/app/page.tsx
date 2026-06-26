@@ -28,7 +28,6 @@ export default function HomePage() {
 
   return (
     <div className="space-y-10 animate-fade-in">
-      {/* Hero Welcome Banner */}
       <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white rounded-3xl p-8 md:p-12 shadow-xl border border-indigo-900/50">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.15),transparent)] pointer-events-none" />
         
@@ -48,9 +47,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Role Navigation Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Officer Card */}
         <Link
           href="/officer"
           className="group card p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between"
@@ -73,7 +70,6 @@ export default function HomePage() {
           </span>
         </Link>
 
-        {/* Member Card */}
         <Link
           href="/member"
           className="group card p-6 hover:border-emerald-500 hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between"
@@ -97,11 +93,10 @@ export default function HomePage() {
         </Link>
       </div>
 
-      {/* master Transaction History table */}
       <div className="card">
         <div className="card-header bg-gray-50 flex items-center justify-between">
           <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider">
-            Municipal Transaction Registry (Flow 5)
+            Municipal Transaction Registry
           </h2>
           <button
             onClick={() => {

@@ -1,8 +1,6 @@
 version: "3.9"
 
 services:
-  # ─── Infrastructure ───────────────────────────────────────────────────────────
-
   postgres:
     image: postgres:16-alpine
     container_name: pvp_postgres
@@ -31,8 +29,8 @@ services:
       RABBITMQ_DEFAULT_USER: pvp_user
       RABBITMQ_DEFAULT_PASS: pvp_password
     ports:
-      - "5672:5672"    # AMQP protocol
-      - "15672:15672"  # Management UI
+      - "5672:5672"
+      - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
@@ -60,8 +58,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── Backend Microservices ────────────────────────────────────────────────────
-
   violation-service:
     build:
       context: .
@@ -78,7 +74,7 @@ services:
       DB_PORT: "5432"
       BILLING_SERVICE_URL: http://billing-service:8082
     expose:
-      - "8081"          # internal only — not published to host
+      - "8081"
     networks:
       - pvp_network
     depends_on:
@@ -129,8 +125,6 @@ services:
       postgres:
         condition: service_healthy
 
-  # ─── API Gateway ─────────────────────────────────────────────────────────────
-
   api-gateway:
     build:
       context: .
@@ -140,14 +134,12 @@ services:
     environment:
       PORT: "8080"
       GIN_MODE: release
-      # Service discovery — uses Docker service names as hostnames.
       VIOLATION_SERVICE_URL: http://violation-service:8081
       BILLING_SERVICE_URL:   http://billing-service:8082
       PAYMENT_SERVICE_URL:   http://payment-service:8083
-      # CORS: allow Next.js dev server and production domain.
       CORS_ORIGIN: "http://localhost:3000"
     ports:
-      - "8080:8080"     # only the gateway is exposed to the host network
+      - "8080:8080"
     networks:
       - pvp_network
     depends_on:
@@ -155,13 +147,11 @@ services:
       - billing-service
       - payment-service
 
-# ─── Volumes ──────────────────────────────────────────────────────────────────
 volumes:
   postgres_data:
   rabbitmq_data:
   redis_data:
 
-# ─── Networks ─────────────────────────────────────────────────────────────────
 networks:
   pvp_network:
     driver: bridge

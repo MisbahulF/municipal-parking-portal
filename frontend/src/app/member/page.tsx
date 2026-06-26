@@ -11,7 +11,6 @@ export default function MemberPage() {
   const [error, setError] = useState<string | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
 
-  // --- Modal Payment State ---
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [scenario, setScenario] = useState<PaymentScenario>('success')
   const [paying, setPaying] = useState(false)
@@ -60,7 +59,6 @@ export default function MemberPage() {
 
       const res = await payInvoice(selectedInvoice.id, { scenario })
       
-      // Update local invoice list status to match
       setInvoices((prev) =>
         prev.map((inv) =>
           inv.id === selectedInvoice.id
@@ -80,7 +78,6 @@ export default function MemberPage() {
         txId: res.transaction_id,
       })
 
-      // Short delay, then close modal
       setTimeout(() => {
         handleCloseModal()
       }, 2000)
@@ -95,13 +92,11 @@ export default function MemberPage() {
     }
   }
 
-  // Calculate stats
   const unpaidCount = invoices.filter((inv) => inv.status === 'UNPAID').length
   const totalFines = invoices.reduce((sum, inv) => sum + inv.calculated_amount, 0)
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header Banner */}
       <div className="bg-gradient-to-r from-emerald-700 to-teal-900 text-white rounded-2xl p-6 md:p-8 shadow-md">
         <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Member Portal</h1>
         <p className="mt-2 text-emerald-100 max-w-2xl text-sm md:text-base">
@@ -109,7 +104,6 @@ export default function MemberPage() {
         </p>
       </div>
 
-      {/* Lookup Form */}
       <div className="card max-w-xl mx-auto">
         <div className="card-header bg-gray-50">
           <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Vehicle Lookup</h2>
@@ -131,12 +125,10 @@ export default function MemberPage() {
         </form>
       </div>
 
-      {/* Results View */}
       {hasSearched && (
         <div className="space-y-6">
           {error && <div className="alert-error max-w-xl mx-auto">{error}</div>}
 
-          {/* Quick stats */}
           {!loading && invoices.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
               <div className="card p-4 bg-white flex flex-col items-center">
@@ -156,7 +148,6 @@ export default function MemberPage() {
             </div>
           )}
 
-          {/* Invoices List */}
           {loading ? (
             <div className="flex justify-center py-12">
               <svg className="animate-spin h-8 w-8 text-emerald-600" fill="none" viewBox="0 0 24 24">
@@ -181,7 +172,6 @@ export default function MemberPage() {
                   <div key={inv.id} className="card hover:shadow-md transition-shadow">
                     <div className="card-body flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       
-                      {/* Left: Info */}
                       <div className="flex gap-4 items-start">
                         {inv.violation?.photo_url && (
                           <a href={inv.violation.photo_url} target="_blank" rel="noopener noreferrer" title="View Full Evidence Image">
@@ -213,34 +203,32 @@ export default function MemberPage() {
                             </span>
                           </div>
                           <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600">
-
-                          <div>
-                            <span className="font-semibold block text-gray-400">Type</span>
-                            <span>{inv.violation?.violation_type?.replace(/_/g, ' ') || 'Parking Offense'}</span>
-                          </div>
-                          <div>
-                            <span className="font-semibold block text-gray-400">Location</span>
-                            <span>{inv.violation?.location || 'Unknown'}</span>
-                          </div>
-                          <div>
-                            <span className="font-semibold block text-gray-400">Date</span>
-                            <span>
-                              {inv.violation?.timestamp
-                                ? new Date(inv.violation.timestamp).toLocaleString()
-                                : 'N/A'}
-                            </span>
-                          </div>
-                          {inv.transaction_id && (
                             <div>
-                              <span className="font-semibold block text-gray-400">Tx ID</span>
-                              <span className="font-mono text-[10px] text-gray-500">{inv.transaction_id}</span>
+                              <span className="font-semibold block text-gray-400">Type</span>
+                              <span>{inv.violation?.violation_type?.replace(/_/g, ' ') || 'Parking Offense'}</span>
                             </div>
-                          )}
+                            <div>
+                              <span className="font-semibold block text-gray-400">Location</span>
+                              <span>{inv.violation?.location || 'Unknown'}</span>
+                            </div>
+                            <div>
+                              <span className="font-semibold block text-gray-400">Date</span>
+                              <span>
+                                {inv.violation?.timestamp
+                                  ? new Date(inv.violation.timestamp).toLocaleString()
+                                  : 'N/A'}
+                              </span>
+                            </div>
+                            {inv.transaction_id && (
+                              <div>
+                                <span className="font-semibold block text-gray-400">Tx ID</span>
+                                <span className="font-mono text-[10px] text-gray-500">{inv.transaction_id}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                      {/* Right: Actions */}
                       <div className="flex items-center gap-4 border-t sm:border-t-0 pt-3 sm:pt-0 justify-between sm:justify-end">
                         <div className="text-right">
                           <span className="text-xs text-gray-400 block font-semibold">Fine Amount</span>
@@ -267,7 +255,6 @@ export default function MemberPage() {
         </div>
       )}
 
-      {/* ================= PAYMENT MODAL ================= */}
       {selectedInvoice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/40 backdrop-blur-sm animate-fade-in">
           <div className="card w-full max-w-md bg-white shadow-xl animate-scale-up">
@@ -296,7 +283,6 @@ export default function MemberPage() {
                 </div>
               )}
 
-              {/* Billing Breakdown */}
               <div className="bg-gray-50 border rounded-lg p-3 space-y-2 text-xs">
                 <span className="font-bold text-gray-800 uppercase block tracking-wider">
                   Calculation Formula Breakdown
@@ -317,7 +303,6 @@ export default function MemberPage() {
                 </div>
               </div>
 
-              {/* Required Scenario Selection */}
               <div>
                 <label className="label text-xs">Test Gateway Scenario (Required)</label>
                 <div className="grid grid-cols-2 gap-3 mt-1">
