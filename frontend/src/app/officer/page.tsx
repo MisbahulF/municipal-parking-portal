@@ -23,12 +23,10 @@ const VIOLATION_TYPES: { value: ViolationType; label: string }[] = [
 ]
 
 export default function OfficerPage() {
-  // --- Active Fine Rules State ---
   const [activeRule, setActiveRule] = useState<FineRule | null>(null)
   const [rulesLoading, setRulesLoading] = useState(true)
   const [rulesError, setRulesError] = useState<string | null>(null)
 
-  // --- Rule Editor State ---
   const [editorDetails, setEditorDetails] = useState<
     {
       violation_type: ViolationType
@@ -41,7 +39,6 @@ export default function OfficerPage() {
   const [publishing, setPublishing] = useState(false)
   const [publishMessage, setPublishMessage] = useState<string | null>(null)
 
-  // --- Violation Form State ---
   const [licensePlate, setLicensePlate] = useState('')
   const [violationType, setViolationType] = useState<ViolationType>('EXPIRED_METER')
   const [location, setLocation] = useState('')
@@ -63,13 +60,11 @@ export default function OfficerPage() {
     reader.readAsDataURL(file)
   }
   
-  // --- Submission Result State ---
   const [createdInvoice, setCreatedInvoice] = useState<{
     violation: Violation
     invoice: Invoice
   } | null>(null)
 
-  // Load active rules on mount
   const fetchRules = async () => {
     try {
       setRulesLoading(true)
@@ -77,7 +72,6 @@ export default function OfficerPage() {
       const res = await getActiveFineRule()
       setActiveRule(res.data)
       
-      // Initialize editor state with loaded values
       if (res.data?.details) {
         setEditorDetails(
           res.data.details.map((d) => ({
@@ -98,15 +92,12 @@ export default function OfficerPage() {
 
   useEffect(() => {
     fetchRules()
-    // Pre-populate timestamp with current local ISO string
     const now = new Date()
-    // Format to YYYY-MM-DDTHH:MM
     const tzOffset = now.getTimezoneOffset() * 60000
     const localISOTime = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16)
     setTimestamp(localISOTime)
   }, [])
 
-  // Handle fine rule updates
   const handleDetailChange = (
     index: number,
     field: 'base_amount' | 'time_window' | 'multiplier',
@@ -136,7 +127,7 @@ export default function OfficerPage() {
       }
       const res = await publishFineRule(payload)
       setPublishMessage(`Successfully published ruleset version ${res.data.version}!`)
-      fetchRules() // refresh view
+      fetchRules()
     } catch (err: any) {
       setPublishMessage(`Error: ${err.message}`)
     } finally {
@@ -144,7 +135,6 @@ export default function OfficerPage() {
     }
   }
 
-  // Handle violation recording
   const handleRecordViolation = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!licensePlate.trim() || !location.trim() || !timestamp) {
@@ -157,7 +147,6 @@ export default function OfficerPage() {
       setViolationError(null)
       setCreatedInvoice(null)
 
-      // Convert local datetime-local picker value to full ISO UTC string
       const utcTimestamp = new Date(timestamp).toISOString()
 
       const payload = {
@@ -170,17 +159,11 @@ export default function OfficerPage() {
 
       const res = await createViolation(payload)
       
-      // Wait a moment for billing async calculation to complete, then poll/fetch invoice
-      // For a better UX, wait 1.5 seconds so billing processor has stored the invoice
       await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      // Now query invoices by plate to find the newest invoice generated
-      // Wait, can fetch via the response data of violation if violation service returned invoice ID,
-      // but violation service responds with Violation data. So we fetch vehicle invoices.
       const invoicesData = await getVehicleInvoices(payload.license_plate)
       
       if (invoicesData.data && invoicesData.data.length > 0) {
-        // Find matching invoice for this violation
         const matched = invoicesData.data.find(
           (inv: Invoice) => inv.violation_id === res.data.id
         )
@@ -189,7 +172,6 @@ export default function OfficerPage() {
             violation: res.data,
             invoice: matched,
           })
-          // Reset form fields
           setLicensePlate('')
           setLocation('')
           setPhotoUrl('')
@@ -209,7 +191,6 @@ export default function OfficerPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header Banner */}
       <div className="bg-gradient-to-r from-blue-700 to-indigo-900 text-white rounded-2xl p-6 md:p-8 shadow-md">
         <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Officer Dashboard</h1>
         <p className="mt-2 text-blue-100 max-w-2xl text-sm md:text-base">
@@ -218,8 +199,6 @@ export default function OfficerPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* ================= COLUMN 1: VIOLATION SUBMISSION (7 cols) ================= */}
         <div className="lg:col-span-7 space-y-6">
           <div className="card">
             <div className="card-header bg-gray-50 flex items-center gap-2">
@@ -287,7 +266,6 @@ export default function OfficerPage() {
               <div>
                 <label className="label text-xs font-bold text-gray-700">Violation Evidence Photo (Optional)</label>
                 <div className="space-y-3 mt-1">
-                  {/* File Upload Input */}
                   <div className="flex items-center justify-center w-full">
                     <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100/70 hover:border-gray-400 transition-all">
                       <div className="flex flex-col items-center justify-center pt-4 pb-4">
@@ -306,7 +284,6 @@ export default function OfficerPage() {
                     </label>
                   </div>
 
-                  {/* Or input URL alternative */}
                   <div className="relative flex py-1 items-center">
                     <div className="flex-grow border-t border-gray-200"></div>
                     <span className="flex-shrink mx-3 text-gray-400 text-[10px] font-bold uppercase tracking-wider">Or enter URL</span>
@@ -322,7 +299,6 @@ export default function OfficerPage() {
                     className="input text-xs"
                   />
 
-                  {/* Image Preview & Clear Button */}
                   {photoUrl && (
                     <div className="relative mt-2 p-2 border rounded-lg bg-gray-50 flex items-center justify-between gap-4 animate-fade-in">
                       <div className="flex items-center gap-3">
@@ -367,7 +343,6 @@ export default function OfficerPage() {
             </form>
           </div>
 
-          {/* Success Invoice Panel */}
           {createdInvoice && (
             <div className="card border-emerald-500 bg-emerald-50/20 overflow-hidden animate-slide-up">
               <div className="card-header bg-emerald-600 text-white flex items-center justify-between">
@@ -416,7 +391,6 @@ export default function OfficerPage() {
           )}
         </div>
 
-        {/* ================= COLUMN 2: RULES CONFIGURATION (5 cols) ================= */}
         <div className="lg:col-span-5 space-y-6">
           <div className="card">
             <div className="card-header bg-gray-50 flex items-center justify-between">
